@@ -151,3 +151,32 @@ document.querySelector("#add-btn").onclick = function() {
 document.querySelector("#sub-btn").onclick = function() {
   sendTransaction(false);
 };
+
+function saveRecord(tData)
+{
+  const request = window.indexedDB.open("budgetList", 1);
+  
+  request.onupgradeneeded = event => {
+    const db = event.target.result;
+
+    const budgetListStore = db.createObjectStore("budgetList", {keyPath: "name"});
+    budgetListStore.createIndex("nameIndex", "name"); 
+  }
+
+  request.onsuccess = () => {
+    const db = request.result;
+    const transaction = db.transaction(["budgetList"], "readwrite");
+    const toDoListStore = transaction.objectStore("budgetList");
+    const statusIndex = toDoListStore.index("nameIndex");
+
+    // Adds data to our objectStore
+    budgetListStore.add({ name: tData.name, value: tData.value, date: tData.date});
+    
+     // Return an item by keyPath
+    const getRequest = budgetListStore.get("Thing");
+    getRequest.onsuccess = () => {
+       console.log(getRequest.result);
+    };
+
+   };
+}

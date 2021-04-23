@@ -166,13 +166,10 @@ function saveRecord(tData)
   request.onsuccess = () => {
     const db = request.result;
     const transaction = db.transaction(["budgetList"], "readwrite");
-    const toDoListStore = transaction.objectStore("budgetList");
-    const statusIndex = toDoListStore.index("nameIndex");
+    const budgetListStore = transaction.objectStore("budgetList");
 
-    // Adds data to our objectStore
     budgetListStore.add({ name: tData.name, value: tData.value, date: tData.date});
     
-     // Return an item by keyPath
     const getRequest = budgetListStore.get("Thing");
     getRequest.onsuccess = () => {
        console.log(getRequest.result);

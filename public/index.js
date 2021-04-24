@@ -1,4 +1,5 @@
 let transactions = [];
+
 let myChart;
 
 fetch("/api/transaction")
@@ -8,11 +9,81 @@ fetch("/api/transaction")
   .then(data => {
     // save db data on global variable
     transactions = data;
-
+    checkIndexDB();
     populateTotal();
     populateTable();
     populateChart();
+    
   });
+
+function checkIndexDB () {
+  
+  const request = window.indexedDB.open("budgetList", 1);
+
+  request.onsuccess = () => {
+    const db = request.result;
+    const transaction = db.transaction(["budgetList"], "readwrite");
+    const budgetListStore = transaction.objectStore("budgetList");
+
+    const getPending = budgetListStore.getAll();
+    getPending.onsuccess = () => {
+      console.log(getPending.result); 
+
+      if (getPending.result.length > 1)
+      {
+        fetch("/api/transaction/bulk", {
+          method: "POST",
+          body: JSON.stringify(getPending.result),
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json"
+          }
+        }).then(response => {    
+          
+          clearData();
+          return response.json();
+        })
+      }
+
+      else if (getPending.result.length > 0)
+      {
+        fetch("/api/transaction", {
+          method: "POST",
+          body: JSON.stringify(getPending.result),
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json"
+          }
+        }).then(response => {    
+          
+          clearData();
+          return response.json();
+        })
+      }
+
+    }; 
+  };
+
+
+}
+
+function clearData() {
+  
+  const request = window.indexedDB.open("budgetList", 1);
+
+  request.onsuccess = () => {
+    const db = request.result;
+    const transaction = db.transaction(["budgetList"], "readwrite");
+    const budgetListStore = transaction.objectStore("budgetList");
+
+
+    const objectStoreRequest = budgetListStore.clear();
+    objectStoreRequest.onsuccess = function(event) {
+      console.log('Back Online, Pushed local data to DB and cleared IndexDB!')
+    };
+  }
+
+}
 
 function populateTotal() {
   // reduce transaction amounts to a single total value
@@ -169,11 +240,6 @@ function saveRecord(tData)
     const budgetListStore = transaction.objectStore("budgetList");
 
     budgetListStore.add({ name: tData.name, value: tData.value, date: tData.date});
-    
-    const getRequest = budgetListStore.get("Thing");
-    getRequest.onsuccess = () => {
-       console.log(getRequest.result);
-    };
 
    };
 }
